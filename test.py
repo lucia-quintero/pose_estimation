@@ -6,18 +6,18 @@ import math
 MODE = "COCO"
 
 if MODE == "COCO":
-    protoFile = "C:/body/models/pose/coco/pose_deploy_linevec.prototxt"
-    weightsFile = "C:/body/models/pose/coco/pose_iter_440000.caffemodel"
+    protoFile = "pose/coco/pose_deploy_linevec.prototxt"
+    weightsFile = "pose/coco/pose_iter_440000.caffemodel"
     nPoints = 18
     POSE_PAIRS = [ [1,0],[1,2],[1,5],[2,3],[3,4],[5,6],[6,7],[1,8],[8,9],[9,10],[1,11],[11,12],[12,13],[0,14],[0,15],[14,16],[15,17]]
 
 elif MODE == "MPI" :
-    protoFile = "C:/body/models/pose/mpi/pose_deploy_linevec_faster_4_stages.prototxt"
-    weightsFile = "C:/body/models/pose/mpi/pose_iter_160000.caffemodel"
+    protoFile = "pose/mpi/pose_deploy_linevec_faster_4_stages.prototxt"
+    weightsFile = "pose/mpi/pose_iter_160000.caffemodel"
     nPoints = 15
     POSE_PAIRS = [[0,1], [1,2], [2,3], [3,4], [1,5], [5,6], [6,7], [1,14], [14,8], [8,9], [9,10], [14,11], [11,12], [12,13] ]
 
-pic = 'C:/body/models/alejo.jpg'
+pic = 'test/alejo.jpg'
 frame = cv2.imread(pic)
 frame = cv2.resize(frame, dsize=(560, 315))
 
@@ -43,9 +43,9 @@ def getdist(pointsList):
 '''
 Implementación YOLO
 '''
-net2 = cv2.dnn.readNet('C:/body/models/yolov3 (1).weights','C:/body/models/yolov3 (1).cfg')
+net2 = cv2.dnn.readNet('yolov3 (1).weights','yolov3 (1).cfg')
 classes = []
-with open('C:/body/models/coco.names','r') as f:
+with open('coco.names','r') as f:
     classes = f.read().splitlines()
 #print(classes)
 img = frame
