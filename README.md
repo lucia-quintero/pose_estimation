@@ -13,5 +13,5 @@ Incluye:
 *Se recomienda el uso de Python 3.8 para prevenir incompatibilidades con las librerías.*
 
 ## Autores
-María Lucía Quintero Vidales
-Alejandro Cárdenas Galeano
+- María Lucía Quintero Vidales
+- Alejandro Cárdenas Galeano
