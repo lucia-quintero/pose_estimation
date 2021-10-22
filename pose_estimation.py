@@ -1,10 +1,11 @@
 import argparse
 import cv2
 import math
-
+import numpy as np
+import time
 from config import Models
 
-
+t = time.time()
 class PoseEstimation:
     def __init__(self, mode):
         self.mode = mode
@@ -31,7 +32,7 @@ class PoseEstimation:
     def load_img(self, img_path):
         self.name_file = img_path.split('/')[-1]
         self.frame = cv2.imread(img_path)
-        self.frame = cv2.resize(self.frame, dsize=(560, 315))
+        self.frame = cv2.resize(self.frame, dsize=(600, 1000))
         self.frameWidth = self.frame.shape[1]
         self.frameHeight = self.frame.shape[0]
 
@@ -46,6 +47,78 @@ class PoseEstimation:
         cv2.putText(self.frame, str("{0:.2f}".format(
             d)), (pt1[0]-40, pt1[1]-20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
 
+    def half(self,pointsList):
+        center_up = None
+        center = None
+        down = None
+        if pointsList[1] == None:
+            if pointsList[2] != None and pointsList[5] != None:
+                #calcula la mitad entre 5 y 2
+                center_up = ((pointsList[2][0]+pointsList[5][0])/2,(pointsList[2][1]+pointsList[5][1])/2)
+        else:
+            center_up = pointsList[1]
+        
+        if pointsList[8] != None and pointsList[11] != None:
+            #calcula la mitad entre 5 y 2
+            center = ((pointsList[8][0]+pointsList[11][0])/2,(pointsList[8][1]+pointsList[11][1])/2)
+
+        if pointsList[9] == None or pointsList[12] == None:
+            if pointsList[12] != None:
+                down = pointsList[12]
+
+            if pointsList[9] != None:
+                down = pointsList[9]
+        else:
+            down = ((pointsList[9][0]+pointsList[12][0])/2,(pointsList[9][1]+pointsList[12][1])/2)
+        
+        if center_up and center and down:
+            m1 = self.gradient(center, center_up)
+            m2 = self.gradient(center, down)
+            angR = np.arctan((m2-m1)/(1+(m2*m1)))  # cálculo de grados
+            angD = round(math.degrees(angR))  # conversión a grados
+            self.angsD.append(angD)
+            cv2.putText(self.frame, str(angD), 
+                        (int(center[0])-40, int(center[1])-20), cv2.FONT_ITALIC, 0.5, (0, 255, 0), 2)
+            cv2.line(self.frame, (int(center_up[0]),int(center_up[1]+100)), (int(center[0]),int(center[1])), (0, 255, 0), 1)
+            cv2.line(self.frame, (int(center[0]),int(center[1])), (int(down[0]),int(down[1])), (0, 255, 0), 1)
+            
+
+    def neck(self, pointsList):
+        center_n = None
+        ref_line = None
+        center_upn = None
+        if pointsList[1] == None:
+            if pointsList[2] != None and pointsList[5] != None:
+                #calcula la mitad entre 5 y 2
+                center_n = ((pointsList[2][0]+pointsList[5][0])/2,(pointsList[2][1]+pointsList[5][1])/2)
+        else:
+            center_n = pointsList[1]
+        
+        ref_line = (center_n[0],center_n[1]-80)#test
+
+        if pointsList[16] != None and pointsList[15] != None:
+            #calcula la mitad entre 5 y 2
+            center_upn = ((pointsList[16][0]+pointsList[15][0])/2,(pointsList[16][1]+pointsList[15][1])/2)
+        elif pointsList[16] == None or pointsList[15] == None:
+            if pointsList[16] != None:
+                center_upn = pointsList[16]
+
+            if pointsList[15] != None:
+                center_upn = pointsList[15]
+        else:
+            center_upn = pointsList[15]
+        
+        if center_upn and center_n and ref_line:
+            m1 = self.gradient(center_n, center_upn)
+            m2 = self.gradient(center_n, ref_line)
+            angR = np.arctan((m2-m1)/(1+(m2*m1)))  # cálculo de grados
+            angD = round(math.degrees(angR))  # conversión a grados
+            self.angsD.append(angD)
+            cv2.putText(self.frame, str(angD),
+                        (center_n[0]-40, center_n[1]-20), cv2.FONT_ITALIC, 0.5, (0, 255, 0), 2)
+            cv2.line(self.frame, center_upn, center_n, (0, 255, 0), 1)
+            cv2.line(self.frame, center_n, ref_line, (0, 255, 0), 1)
+
     def gradient(self, pt1, pt2):
         if pt1[1] == pt2[1]:
             y = (pt2[1]-(pt1[1]+1))/(pt2[0]-pt1[0])
@@ -57,15 +130,15 @@ class PoseEstimation:
     
     def getAngle(self, points):
         pt1, pt2, pt3 = points[-3:]  # tomo los últimos 3 puntos
-        m1 = self.gradient(pt1, pt2)
-        m2 = self.gradient(pt1, pt3)
-        angR = math.atan((m2-m1)/(1+(m2*m1)))  # cálculo de grados
-        angD = round(math.degrees(angR))  # conversión a grados
+        m1 = self.gradient(pt2, pt1)
+        m2 = self.gradient(pt2, pt3)
+        angR = np.arctan((m2-m1)/(1+(m2*m1)))  # cálculo de grados
+        angD = abs(round(math.degrees(angR)))  # conversión a grados
         self.angsD.append(angD)
         cv2.putText(self.frame, str(angD),
-                    (pt1[0]-40, pt1[1]-20), cv2.FONT_ITALIC, 0.5, (255, 0, 0), 2)
-        cv2.line(self.frame, pt1, pt2, (0, 255, 255), 2)
-        cv2.line(self.frame, pt2, pt3, (0, 255, 255), 2)
+                    (pt1[0]-40, pt1[1]-20), cv2.FONT_ITALIC, 0.5, (0, 0, 255), 2)
+        cv2.line(self.frame, pt1, pt2, (0, 255, 255), 1)
+        cv2.line(self.frame, pt2, pt3, (0, 255, 255), 1)
             
     def getBlobresult(self):
         inpBlob = cv2.dnn.blobFromImage(self.frame, 1.0 / 255, (368, 368),
@@ -94,10 +167,10 @@ class PoseEstimation:
             y = (self.frameHeight * point[1]) / H
 
             if prob > self.threshold:
-                cv2.circle(self.frame, (int(x), int(y)), 4, (0, 255, 255),
+                cv2.circle(self.frame, (int(x), int(y)),2, (0, 255, 255),
                         thickness=-1, lineType=cv2.FILLED)
                 cv2.putText(self.frame, "{}".format(i), (int(x), int(
-                    y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, lineType=cv2.LINE_AA)
+                    y)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2, lineType=cv2.LINE_AA)
 
                 # Add the point to the list if the probability is greater than the threshold
                 points.append((int(x), int(y)))
@@ -105,7 +178,7 @@ class PoseEstimation:
                 points.append(None)
    
             try: 
-                if i >= 2 and i <= 15:
+                if i >= 2 and i <= 18:
                     if len(points) == 5:
                         self.getAngle(points)
                     elif len(points) == 8:
@@ -114,6 +187,10 @@ class PoseEstimation:
                         self.getAngle(points)
                     elif len(points) == 14:
                         self.getAngle(points)
+                        self.half(points)
+                    elif len(points) == 17:
+                        self.neck(points)
+    
             except Exception as d:
                 print("Angle not found")
         if verbose:
@@ -126,9 +203,9 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument("-m", "--mode", type=str, default="COCO",
                     help="Ingrese el modo")
-    ap.add_argument("-i", "--img", type=str, default="test/tenis.jpg",
+    ap.add_argument("-i", "--img", type=str, default="test/try.jpg",
                     help="Ingrese la imagen de prueba")
-    ap.add_argument("-s", "--verbose", type=int, default=0,
+    ap.add_argument("-s", "--verbose", type=int, default=1,
                     help="True/False mostrar datos")
 
     args = vars(ap.parse_args())
@@ -140,5 +217,6 @@ if __name__ == '__main__':
     pose_obj.load_img(img_path)
     pose_obj.mainloop(verbose)
 
+print("Total time taken : {:.3f}".format(time.time() - t))
 
 
